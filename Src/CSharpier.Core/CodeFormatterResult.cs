@@ -19,4 +19,8 @@ public class CodeFormatterResult
     internal bool ReorderedModifiers { get; init; }
     internal bool ReorderedUsingsWithDisabledText { get; init; }
     internal bool MovedTrailingTrivia { get; init; }
+    internal bool ReorderedMembers { get; init; }
+
+    // types whose members were left in their original order, with the reason
+    internal IReadOnlyList<string> MemberOrderWarnings { get; init; } = [];
 }

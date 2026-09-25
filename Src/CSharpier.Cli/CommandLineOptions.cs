@@ -1,4 +1,5 @@
 using System.CommandLine;
+using CSharpier.Core;
 using Microsoft.Extensions.Logging;
 
 namespace CSharpier.Cli;
@@ -18,6 +19,7 @@ internal class CommandLineOptions
     public bool SyntaxErrorsAsWarnings { get; init; }
     public bool UnformattedAsWarnings { get; init; }
     public bool IncludeGenerated { get; init; }
+    public MemberOrder MemberOrder { get; init; }
     public string? StandardInFileContents { get; init; }
     public string? ConfigPath { get; init; }
     public string? IgnorePath { get; init; }

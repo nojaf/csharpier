@@ -1,0 +1,68 @@
+public class Groups : Node
+{
+    public enum State
+    {
+        Idle,
+    }
+
+    public delegate void Callback();
+
+    public interface IThing { }
+
+    public struct Point { }
+
+    public class Inner { }
+
+    public record Data(int Value);
+
+    public const int PublicConstant = 2;
+
+    private const int PrivateConstant = 1;
+
+    public event Action? SomethingHappened;
+
+    [Signal]
+    public delegate void HitEventHandler();
+
+    [Export]
+    public int Exported { get; set; }
+
+    [ExportGroup("Movement")]
+    [Export]
+    private float speed;
+
+    public static int PublicStaticProperty { get; set; }
+    public static event Action? StaticEvent;
+
+    private static int privateStaticField;
+
+    public int PublicProperty { get; set; }
+    internal int this[int index] => index;
+    protected int protectedField;
+
+    private int privateField;
+
+    static Groups() { }
+
+    public Groups() { }
+
+    ~Groups() { }
+
+    public override void _EnterTree() { }
+
+    public override void _Ready() { }
+
+    public override void _PhysicsProcess(double delta) { }
+
+    public override void _ExitTree() { }
+
+    public override void _Draw() { }
+
+    public override string ToString() => "";
+
+    public static void StaticMethod() { }
+
+    public static Groups operator +(Groups left, Groups right) => left;
+
+    public void InstanceMethod() { }
+}

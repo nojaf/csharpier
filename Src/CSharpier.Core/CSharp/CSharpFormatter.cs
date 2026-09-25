@@ -149,13 +149,18 @@ public static class CSharpFormatter
         {
             var lineEnding = PrinterOptions.GetLineEnding(syntaxTree.ToString(), printerOptions);
             var printingContext = new CSharpPrintingContext { LineEnding = lineEnding };
-            var document = Node.Print(rootNode, printingContext);
+            var memberOrderWarnings = new List<string>();
+            var document = Node.Print(
+                ReorderMembers(rootNode, printerOptions, printingContext, memberOrderWarnings),
+                printingContext
+            );
             var formattedCode = DocPrinter.DocPrinter.Print(document, printerOptions, lineEnding);
             var reorderedModifiers = printingContext.State.ReorderedModifiers;
             var reorderedUsingsWithDisabledText = printingContext
                 .State
                 .ReorderedUsingsWithDisabledText;
             var movedTrailingTrivia = printingContext.State.MovedTrailingTrivia;
+            var reorderedMembers = printingContext.State.ReorderedMembers;
 
             foreach (var symbolSet in PreprocessorSymbols.GetSets(syntaxTree))
             {
@@ -168,7 +173,12 @@ public static class CSharpFormatter
 
                 var formattingContext2 = new CSharpPrintingContext { LineEnding = lineEnding };
                 document = Node.Print(
-                    await syntaxTree.GetRootAsync(cancellationToken),
+                    ReorderMembers(
+                        (CompilationUnitSyntax)await syntaxTree.GetRootAsync(cancellationToken),
+                        printerOptions,
+                        formattingContext2,
+                        memberOrderWarnings
+                    ),
                     formattingContext2
                 );
                 formattedCode = DocPrinter.DocPrinter.Print(document, printerOptions, lineEnding);
@@ -179,6 +189,7 @@ public static class CSharpFormatter
                     || formattingContext2.State.ReorderedUsingsWithDisabledText;
                 movedTrailingTrivia =
                     movedTrailingTrivia || formattingContext2.State.MovedTrailingTrivia;
+                reorderedMembers = reorderedMembers || formattingContext2.State.ReorderedMembers;
             }
 
             return new CodeFormatterResult
@@ -191,6 +202,8 @@ public static class CSharpFormatter
                 ReorderedModifiers = reorderedModifiers,
                 ReorderedUsingsWithDisabledText = reorderedUsingsWithDisabledText,
                 MovedTrailingTrivia = movedTrailingTrivia,
+                ReorderedMembers = reorderedMembers,
+                MemberOrderWarnings = memberOrderWarnings.Distinct().ToList(),
             };
         }
         catch (InTooDeepException)
@@ -200,6 +213,23 @@ public static class CSharpFormatter
                 FailureMessage = "We can't handle this deep of recursion yet.",
             };
         }
+    }
+
+    private static CompilationUnitSyntax ReorderMembers(
+        CompilationUnitSyntax rootNode,
+        PrinterOptions printerOptions,
+        CSharpPrintingContext printingContext,
+        List<string> warnings
+    )
+    {
+        if (printerOptions.MemberOrder is not MemberOrder.Godot)
+        {
+            return rootNode;
+        }
+
+        var result = MemberReorderer.Reorder(rootNode, warnings, out var reorderedMembers);
+        printingContext.State.ReorderedMembers = reorderedMembers;
+        return result;
     }
 
     private static string PrintAST(CompilationUnitSyntax rootNode)

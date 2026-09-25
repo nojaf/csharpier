@@ -70,3 +70,6 @@ copilot.data.migration.ask.xml
 copilot.data.migration.ask2agent.xml
 copilot.data.migration.edit.xml
 .DS_Store
+
+# local release builds (csfmt uses artifacts/csharpier-linux-x64)
+artifacts/

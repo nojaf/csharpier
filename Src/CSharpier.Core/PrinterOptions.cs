@@ -32,6 +32,7 @@ internal class PrinterOptions(
     public Formatter Formatter { get; } = formatter;
     public XmlWhitespaceSensitivity XmlWhitespaceSensitivity { get; set; } =
         xmlWhitespaceSensitivity;
+    public MemberOrder MemberOrder { get; set; }
 
     public const int WidthUsedByTests = 100;
 

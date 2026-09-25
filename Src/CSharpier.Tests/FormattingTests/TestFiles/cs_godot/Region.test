@@ -1,0 +1,13 @@
+public class Region
+{
+    #region Methods
+    public void Caller()
+    {
+        Callee();
+    }
+
+    private void Callee() { }
+    #endregion
+
+    public const int Constant = 1;
+}

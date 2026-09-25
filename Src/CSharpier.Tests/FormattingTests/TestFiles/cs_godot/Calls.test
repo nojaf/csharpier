@@ -1,0 +1,55 @@
+public class Calls : Node
+{
+    public void Run()
+    {
+        Bare();
+        this.Explicit();
+        Calls.Qualified();
+        Action action = () => InLambda();
+        Local();
+
+        void Local()
+        {
+            InLocalFunction();
+        }
+    }
+
+    public void NotCalls(Calls other)
+    {
+        Button.Pressed += MethodGroup;
+        Callable.From(MethodGroupArgument);
+        other.OtherInstance();
+        base.BaseCall();
+        Other.OtherType();
+        Shadowed();
+
+        void Shadowed() { }
+    }
+
+    public void Recursive()
+    {
+        Recursive();
+    }
+
+    private void Bare() { }
+
+    private void Explicit() { }
+
+    private static void Qualified() { }
+
+    private void InLambda() { }
+
+    private void InLocalFunction() { }
+
+    private void MethodGroup() { }
+
+    private void MethodGroupArgument() { }
+
+    private void OtherInstance() { }
+
+    private void BaseCall() { }
+
+    private void OtherType() { }
+
+    private void Shadowed() { }
+}

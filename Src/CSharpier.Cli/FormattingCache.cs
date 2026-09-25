@@ -33,7 +33,10 @@ internal static class FormattingCacheFactory
         CancellationToken cancellationToken
     )
     {
-        if (commandLineOptions.NoCache)
+        // when the local app data folder can't be resolved (XDG_DATA_HOME pointing at a folder that
+        // doesn't exist, for example) the path is relative, and the cache would be written into
+        // whatever directory csharpier runs from
+        if (commandLineOptions.NoCache || !Path.IsPathRooted(CacheFilePath))
         {
             return NullCache;
         }
@@ -98,8 +101,14 @@ internal static class FormattingCacheFactory
         IFileSystem fileSystem
     ) : IFormattingCache
     {
+        // a module version id changes whenever that assembly's compiled output does, so a rebuilt
+        // fork never trusts old entries even though the version stays the same. The formatter lives
+        // in Core, and the cli isn't recompiled when only Core's internals change, so both are part
+        // of the key
         private static readonly byte[] CSharpierVersionBytes = Encoding.UTF8.GetBytes(
-            typeof(FormattingCache).Assembly.GetName().Version?.ToString() ?? string.Empty
+            $"{typeof(FormattingCache).Assembly.GetName().Version}"
+                + $"_{typeof(FormattingCache).Assembly.ManifestModule.ModuleVersionId}"
+                + $"_{typeof(CodeFormatter).Assembly.ManifestModule.ModuleVersionId}"
         );
 
         private static readonly ConditionalWeakTable<PrinterOptions, string> printerOptionsHashes =

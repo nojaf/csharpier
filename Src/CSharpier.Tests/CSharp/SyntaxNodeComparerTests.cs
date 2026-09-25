@@ -1024,6 +1024,78 @@ var someValue = $"""
         result.Should().BeEmpty();
     }
 
+    [Test]
+    public void Reordered_Members_Equal()
+    {
+        var left = """
+            class ClassName
+            {
+                void Caller() => Callee();
+
+                void Callee() { }
+
+                int field;
+            }
+            """;
+        var right = """
+            class ClassName
+            {
+                int field;
+
+                void Callee() { }
+
+                void Caller() => Callee();
+            }
+            """;
+
+        CompareSource(left, right).Should().NotBeEmpty();
+        CompareSource(left, right, reorderedMembers: true).Should().BeEmpty();
+    }
+
+    [Test]
+    public void Reordered_Members_Still_Compares_Member_Contents()
+    {
+        var left = """
+            class ClassName
+            {
+                void Method(int value) { }
+
+                int field;
+            }
+            """;
+        var right = """
+            class ClassName
+            {
+                int field;
+
+                void Method(int value) { value++; }
+            }
+            """;
+
+        CompareSource(left, right, reorderedMembers: true).Should().NotBeEmpty();
+    }
+
+    [Test]
+    public void Reordered_Members_Missing_Member_Not_Equal()
+    {
+        var left = """
+            class ClassName
+            {
+                void Method() { }
+
+                int field;
+            }
+            """;
+        var right = """
+            class ClassName
+            {
+                int field;
+            }
+            """;
+
+        CompareSource(left, right, reorderedMembers: true).Should().NotBeEmpty();
+    }
+
     private static void ResultShouldBe(string actual, string expected)
     {
         actual.ReplaceLineEndings().Should().Be(expected.ReplaceLineEndings());
@@ -1034,13 +1106,15 @@ var someValue = $"""
         string right,
         bool reorderedUsingsWithDisabledText = false,
         bool movedTrailingTrivia = false,
-        bool reorderedModifiers = false
+        bool reorderedModifiers = false,
+        bool reorderedMembers = false
     )
     {
         var result = new SyntaxNodeComparer(
             left,
             right,
             reorderedModifiers,
+            reorderedMembers,
             reorderedUsingsWithDisabledText,
             movedTrailingTrivia,
             SourceCodeKind.Regular,

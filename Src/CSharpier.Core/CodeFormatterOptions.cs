@@ -9,6 +9,7 @@ public class CodeFormatterOptions
     public bool IncludeGenerated { get; init; }
     public XmlWhitespaceSensitivity XmlWhitespaceSensitivity { get; init; } =
         XmlWhitespaceSensitivity.Strict;
+    public MemberOrder MemberOrder { get; init; }
 
     internal PrinterOptions ToPrinterOptions()
     {
@@ -19,6 +20,7 @@ public class CodeFormatterOptions
             IndentSize = this.IndentSize,
             EndOfLine = this.EndOfLine,
             IncludeGenerated = this.IncludeGenerated,
+            MemberOrder = this.MemberOrder,
         };
     }
 }

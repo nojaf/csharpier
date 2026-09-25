@@ -3,3 +3,8 @@ CSharpier.Core.CodeFormatterOptions.XmlWhitespaceSensitivity.init -> void
 CSharpier.Core.XmlWhitespaceSensitivity
 CSharpier.Core.XmlWhitespaceSensitivity.Ignore = 1 -> CSharpier.Core.XmlWhitespaceSensitivity
 CSharpier.Core.XmlWhitespaceSensitivity.Strict = 0 -> CSharpier.Core.XmlWhitespaceSensitivity
+CSharpier.Core.CodeFormatterOptions.MemberOrder.get -> CSharpier.Core.MemberOrder
+CSharpier.Core.CodeFormatterOptions.MemberOrder.init -> void
+CSharpier.Core.MemberOrder
+CSharpier.Core.MemberOrder.Godot = 1 -> CSharpier.Core.MemberOrder
+CSharpier.Core.MemberOrder.None = 0 -> CSharpier.Core.MemberOrder

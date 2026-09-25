@@ -35,6 +35,7 @@ public class BaseTest
                 var useTabs = fileNameWithoutExtension.EndsWith("_Tabs", StringComparison.Ordinal);
                 var directoryName = file.Directory!.Name;
                 var xmlWhitespaceSensitivity = XmlWhitespaceSensitivity.Strict;
+                var memberOrder = MemberOrder.None;
                 if (directoryName.Contains('_'))
                 {
                     var parts = directoryName.Split('_');
@@ -42,6 +43,7 @@ public class BaseTest
                     xmlWhitespaceSensitivity = parts[1] is "ignore"
                         ? XmlWhitespaceSensitivity.Ignore
                         : XmlWhitespaceSensitivity.Strict;
+                    memberOrder = parts[1] is "godot" ? MemberOrder.Godot : MemberOrder.None;
                 }
 
                 var formatter = directoryName switch
@@ -56,6 +58,7 @@ public class BaseTest
                 {
                     UseTabs = useTabs,
                     Width = PrinterOptions.WidthUsedByTests,
+                    MemberOrder = memberOrder,
                 };
 
                 context.AddTest(
@@ -127,6 +130,7 @@ public class BaseTest
             expectedCode,
             normalizedCode,
             false,
+            result.ReorderedMembers,
             false,
             false,
             SourceCodeKind.Regular,
@@ -145,5 +149,30 @@ public class BaseTest
 
         var compareResult = comparer.CompareSource();
         compareResult.Should().BeNullOrEmpty();
+
+        if (printerOptions.MemberOrder is not MemberOrder.None)
+        {
+            // the expected file already has its members in order, so also check that
+            // reordering the input only moved members around
+            var inputComparer = new SyntaxNodeComparer(
+                fileReaderResult.FileContents,
+                result.Code,
+                result.ReorderedModifiers,
+                result.ReorderedMembers,
+                result.ReorderedUsingsWithDisabledText,
+                result.MovedTrailingTrivia,
+                SourceCodeKind.Regular,
+                CancellationToken.None
+            );
+            inputComparer.CompareSource().Should().BeNullOrEmpty();
+
+            var secondResult = await CodeFormatter.FormatAsync(
+                result.Code,
+                printerOptions,
+                CancellationToken.None
+            );
+            secondResult.Code.Should().Be(result.Code);
+            secondResult.ReorderedMembers.Should().BeFalse();
+        }
     }
 }

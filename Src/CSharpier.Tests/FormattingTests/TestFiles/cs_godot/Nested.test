@@ -1,0 +1,38 @@
+namespace Game;
+
+public class Outer
+{
+    public void OuterCaller()
+    {
+        OuterCallee();
+    }
+
+    private void OuterCallee() { }
+
+    private class Inner
+    {
+        public void InnerCaller()
+        {
+            InnerCallee();
+        }
+
+        private void InnerCallee() { }
+
+        private int field;
+    }
+
+    private int field;
+}
+
+public interface IUntouched
+{
+    void Method();
+
+    const int Constant = 1;
+}
+
+public enum Untouched
+{
+    B,
+    A,
+}
