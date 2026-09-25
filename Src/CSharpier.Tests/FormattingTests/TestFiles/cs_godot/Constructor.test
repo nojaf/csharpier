@@ -1,0 +1,11 @@
+public partial class Ctor : Node
+{
+    public Ctor()
+    {
+        Setup();
+    }
+
+    public override void _Ready() { }
+
+    private void Setup() { }
+}

@@ -1,0 +1,13 @@
+public class Overloads
+{
+    private void Unrelated() { }
+
+    private void Log(string message) { }
+
+    private void Log(string message, int level) { }
+
+    public void Caller()
+    {
+        Log("message");
+    }
+}

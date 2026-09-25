@@ -41,6 +41,7 @@ public class CSharpBenchmarks
             false,
             false,
             false,
+            false,
             SourceCodeKind.Regular,
             CancellationToken.None
         );

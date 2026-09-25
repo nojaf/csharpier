@@ -1,0 +1,25 @@
+public partial class Match : Node2D
+{
+    [Export]
+    private Tide? ExportTide { get; set; }
+
+    private Tide Tide => Wired(ExportTide);
+    private int count = Initial();
+
+    public override void _Ready()
+    {
+        Tide.Initialize();
+    }
+
+    private void Unrelated() { }
+
+    private static int Initial() => 0;
+
+    private static T Wired<T>(T? export)
+        where T : class
+    {
+        return export ?? throw Unset(typeof(T));
+    }
+
+    private static Exception Unset(Type type) => new InvalidOperationException(type.Name);
+}

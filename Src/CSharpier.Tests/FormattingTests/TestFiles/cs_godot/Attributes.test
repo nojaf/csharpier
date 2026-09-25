@@ -1,0 +1,19 @@
+public class Attributes : Node
+{
+    private int plain;
+
+    [global::Godot.Export]
+    private int global;
+
+    [Godot.ExportAttribute]
+    private int qualified;
+
+    [ExportAttribute]
+    private int suffixed;
+
+    [Godot.Signal]
+    public delegate void QualifiedEventHandler();
+
+    [ExportGroup("Not an export")]
+    private int group;
+}

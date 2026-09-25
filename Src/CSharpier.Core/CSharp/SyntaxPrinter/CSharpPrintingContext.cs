@@ -29,6 +29,9 @@ internal class CSharpPrintingContext : BasePrintingContext
         // of an #if, then we can't compare the before and after disabled text in the source file
         public bool ReorderedModifiers { get; set; }
 
+        // the members of a type were reordered before printing, so their position can't be compared
+        public bool ReorderedMembers { get; set; }
+
         // we also need to keep track if we move around usings with disabledText
         public bool ReorderedUsingsWithDisabledText { get; set; }
 

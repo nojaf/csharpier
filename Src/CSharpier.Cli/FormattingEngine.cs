@@ -147,6 +147,7 @@ internal class FormattingEngine(
         if (printerOptions is { Formatter: not Formatter.Unknown })
         {
             printerOptions.IncludeGenerated = commandLineOptions.IncludeGenerated;
+            printerOptions.MemberOrder = commandLineOptions.MemberOrder;
 
             var fileToFormatInfo = await getFileToFormatInfo(cancellationToken);
 
@@ -251,6 +252,11 @@ internal class FormattingEngine(
             return;
         }
 
+        foreach (var memberOrderWarning in codeFormattingResult.MemberOrderWarnings)
+        {
+            fileIssueLogger.WriteWarning(memberOrderWarning);
+        }
+
         if (!string.IsNullOrEmpty(codeFormattingResult.FailureMessage))
         {
             fileIssueLogger.WriteError(codeFormattingResult.FailureMessage);
@@ -318,6 +324,7 @@ internal class FormattingEngine(
                 fileToFormatInfo.FileContents,
                 codeFormattingResult.Code,
                 codeFormattingResult.ReorderedModifiers,
+                codeFormattingResult.ReorderedMembers,
                 codeFormattingResult.ReorderedUsingsWithDisabledText,
                 codeFormattingResult.MovedTrailingTrivia,
                 sourceCodeKind,

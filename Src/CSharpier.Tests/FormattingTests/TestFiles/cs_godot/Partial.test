@@ -1,0 +1,18 @@
+public partial class Partial
+{
+    public void Caller()
+    {
+        // declared in the other half, so it doesn't constrain anything
+        FromOtherHalf();
+        Callee();
+    }
+
+    private void Callee() { }
+}
+
+public partial class Partial
+{
+    public void FromOtherHalf() { }
+
+    private int field;
+}

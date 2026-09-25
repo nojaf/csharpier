@@ -1,0 +1,21 @@
+public partial class Cycle
+{
+    private void B()
+    {
+        A();
+    }
+
+    private void A()
+    {
+        B();
+    }
+
+    private void Leaf() { }
+
+    private void UsesLeaf()
+    {
+        Leaf();
+    }
+
+    public override void _Ready() { }
+}

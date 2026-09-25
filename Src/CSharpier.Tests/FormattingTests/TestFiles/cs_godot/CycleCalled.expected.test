@@ -1,0 +1,22 @@
+public class CycleCalled
+{
+    private void Unrelated() { }
+
+    private void Leaf() { }
+
+    private void Ping()
+    {
+        Pong();
+    }
+
+    private void Pong()
+    {
+        Ping();
+        Leaf();
+    }
+
+    public void Caller()
+    {
+        Ping();
+    }
+}

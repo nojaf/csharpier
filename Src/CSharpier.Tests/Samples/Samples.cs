@@ -40,6 +40,7 @@ public class Samples
             false,
             false,
             false,
+            false,
             SourceCodeKind.Regular,
             CancellationToken.None
         );

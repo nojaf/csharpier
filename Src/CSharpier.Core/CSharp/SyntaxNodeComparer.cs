@@ -12,6 +12,7 @@ internal partial class SyntaxNodeComparer
     protected SyntaxTree OriginalSyntaxTree { get; }
     protected SyntaxTree NewSyntaxTree { get; }
     protected bool ReorderedModifiers { get; }
+    protected bool ReorderedMembers { get; }
     protected bool ReorderedUsingsWithDisabledText { get; }
     protected bool MovedTrailingTrivia { get; }
 
@@ -23,6 +24,7 @@ internal partial class SyntaxNodeComparer
         string originalSourceCode,
         string newSourceCode,
         bool reorderedModifiers,
+        bool reorderedMembers,
         bool reorderedUsingsWithDisabledText,
         bool movedTrailingTrivia,
         SourceCodeKind sourceCodeKind,
@@ -32,6 +34,7 @@ internal partial class SyntaxNodeComparer
         this.OriginalSourceCode = originalSourceCode;
         this.NewSourceCode = newSourceCode;
         this.ReorderedModifiers = reorderedModifiers;
+        this.ReorderedMembers = reorderedMembers;
         this.ReorderedUsingsWithDisabledText = reorderedUsingsWithDisabledText;
         this.MovedTrailingTrivia = movedTrailingTrivia;
 
@@ -542,6 +545,101 @@ internal partial class SyntaxNodeComparer
         }
 
         return Equal;
+    }
+
+    // when members were reordered, the members of a class, struct or record are compared as a
+    // multiset: both lists are sorted by a key that survives formatting, then compared pairwise
+    private CompareResult CompareMembers(
+        SyntaxList<MemberDeclarationSyntax> original,
+        SyntaxList<MemberDeclarationSyntax> formatted,
+        SyntaxNode originalParent,
+        SyntaxNode formattedParent
+    )
+    {
+        if (
+            !this.ReorderedMembers
+            || originalParent
+                is not (
+                    ClassDeclarationSyntax
+                    or StructDeclarationSyntax
+                    or RecordDeclarationSyntax
+                )
+        )
+        {
+            return this.CompareLists(
+                original,
+                formatted,
+                static (_, _) => default,
+                o => o.Span,
+                originalParent.Span,
+                formattedParent.Span
+            );
+        }
+
+        if (original.Count != formatted.Count)
+        {
+            return NotEqual(originalParent, formattedParent);
+        }
+
+        var sortedOriginal = original.OrderBy(GetMemberKey, StringComparer.Ordinal).ToList();
+        var sortedFormatted = formatted.OrderBy(GetMemberKey, StringComparer.Ordinal).ToList();
+
+        for (var x = 0; x < sortedOriginal.Count; x++)
+        {
+            this.originalStack.Push((sortedOriginal[x], originalParent));
+            this.formattedStack.Push((sortedFormatted[x], formattedParent));
+        }
+
+        return Equal;
+    }
+
+    // the kind, name and parameter types of a member, none of which formatting changes
+    private static string GetMemberKey(MemberDeclarationSyntax member)
+    {
+        static string Tokens(SyntaxNode? node)
+        {
+            return node is null
+                ? string.Empty
+                : string.Concat(node.DescendantTokens().Select(o => o.Text));
+        }
+
+        static string Parameters(BaseParameterListSyntax? parameterList)
+        {
+            return parameterList is null
+                ? string.Empty
+                : string.Join(",", parameterList.Parameters.Select(o => Tokens(o.Type)));
+        }
+
+        var name = member switch
+        {
+            BaseTypeDeclarationSyntax o => o.Identifier.Text
+                + Tokens((o as TypeDeclarationSyntax)?.TypeParameterList),
+            DelegateDeclarationSyntax o => o.Identifier.Text + Tokens(o.TypeParameterList),
+            BaseFieldDeclarationSyntax o => string.Join(
+                ",",
+                o.Declaration.Variables.Select(v => v.Identifier.Text)
+            ),
+            PropertyDeclarationSyntax o => Tokens(o.ExplicitInterfaceSpecifier) + o.Identifier.Text,
+            EventDeclarationSyntax o => Tokens(o.ExplicitInterfaceSpecifier) + o.Identifier.Text,
+            IndexerDeclarationSyntax o => Tokens(o.ExplicitInterfaceSpecifier)
+                + Parameters(o.ParameterList),
+            MethodDeclarationSyntax o => Tokens(o.ExplicitInterfaceSpecifier)
+                + o.Identifier.Text
+                + Tokens(o.TypeParameterList)
+                + Parameters(o.ParameterList),
+            ConstructorDeclarationSyntax o => (
+                o.Modifiers.Any(m => m.RawSyntaxKind() is SyntaxKind.StaticKeyword)
+                    ? "static"
+                    : string.Empty
+            ) + Parameters(o.ParameterList),
+            OperatorDeclarationSyntax o => o.OperatorToken.Text + Parameters(o.ParameterList),
+            ConversionOperatorDeclarationSyntax o => o.ImplicitOrExplicitKeyword.Text
+                + Tokens(o.Type)
+                + Parameters(o.ParameterList),
+            _ => string.Empty,
+        };
+
+        return member.RawKind + ":" + name;
     }
 
     private CompareResult CompareModifierToken(

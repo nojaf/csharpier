@@ -70,6 +70,7 @@ public class FormatController : ControllerBase
             model.Code,
             result.Code,
             result.ReorderedModifiers,
+            result.ReorderedMembers,
             result.ReorderedUsingsWithDisabledText,
             result.MovedTrailingTrivia,
             parsedFormatter is Formatter.CSharp ? SourceCodeKind.Regular : SourceCodeKind.Script,

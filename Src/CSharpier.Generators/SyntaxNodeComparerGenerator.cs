@@ -15,9 +15,8 @@ public class SyntaxNodeComparerGenerator : IIncrementalGenerator
             (compilation, _) => ValidNodeTypes.Get(compilation)
         );
 
-        context.RegisterSourceOutput(
-            compilationProvider,
-            static (context, entityClasses) => Execute(context, entityClasses)
+        context.RegisterSourceOutput(compilationProvider, static (context, entityClasses) =>
+            Execute(context, entityClasses)
         );
     }
 
@@ -236,6 +235,15 @@ namespace CSharpier.Core.CSharp
                 {
                     sourceBuilder.AppendLine(
                         $"            result = this.CompareUsingDirectives(originalNode.{propertyName}, formattedNode.{propertyName}, originalNode, formattedNode);"
+                    );
+                }
+                else if (
+                    propertyType.IsGenericType
+                    && propertyType.TypeArguments[0].Name == nameof(MemberDeclarationSyntax)
+                )
+                {
+                    sourceBuilder.AppendLine(
+                        $"            result = this.CompareMembers(originalNode.{propertyName}, formattedNode.{propertyName}, originalNode, formattedNode);"
                     );
                 }
                 else

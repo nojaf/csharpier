@@ -1,0 +1,18 @@
+public record Trivia
+{
+    private int first;
+
+    /// <summary>
+    /// Documented.
+    /// </summary>
+    public int Second { get; set; } // trailing
+
+    // about the constant
+    public const int Constant = 1;
+}
+
+public struct Adjacent
+{
+    private int a;
+    public int B;
+}

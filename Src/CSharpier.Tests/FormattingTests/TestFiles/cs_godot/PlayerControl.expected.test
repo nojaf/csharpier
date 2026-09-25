@@ -1,0 +1,76 @@
+public partial class PlayerControl : Node
+{
+    private sealed record Wiring(Tide Tide, Critters Critters);
+
+    private const int SlotCount = 3;
+
+    [Signal]
+    public delegate void SelectionChangedEventHandler(Critter critter);
+
+    [Signal]
+    public delegate void MoveOrderedEventHandler(Vector2 target);
+
+    private Critter? _selectedCritter;
+
+    private Wiring? _wiring;
+    private Wiring Wired => _wiring ?? throw new InvalidOperationException();
+    private Tide Tide => Wired.Tide;
+    private Critters Critters => Wired.Critters;
+
+    public override void _UnhandledInput(InputEvent @event)
+    {
+        if (FriendlyCritterUnder(@event))
+        {
+            return;
+        }
+    }
+
+    public override void _UnhandledKeyInput(InputEvent @event)
+    {
+        CommitSlot(0);
+    }
+
+    public void Initialize(Tide tide, Critters critters)
+    {
+        _wiring = new Wiring(tide, critters);
+        Critters.CritterStoppedWalking += CrittersOnCritterStoppedWalking;
+        Critters.CritterTapped += CrittersOnCritterTapped;
+    }
+
+    private bool FriendlyCritterUnder(InputEvent @event)
+    {
+        return _selectedCritter != null;
+    }
+
+    private void Deselect()
+    {
+        _selectedCritter = null;
+    }
+
+    private void CrittersOnCritterStoppedWalking(Critter critter)
+    {
+        Deselect();
+    }
+
+    private void Select(Critter critter)
+    {
+        _selectedCritter = critter;
+    }
+
+    private void CrittersOnCritterTapped(Critter critter)
+    {
+        Deselect();
+        Select(critter);
+    }
+
+    public Critter[] LockOnTargets()
+    {
+        return new Critter[SlotCount];
+    }
+
+    public void CommitSlot(int index)
+    {
+        var targets = LockOnTargets();
+        Deselect();
+    }
+}
