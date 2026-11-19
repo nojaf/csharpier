@@ -588,8 +588,11 @@ internal class MemberReorderer
             ? methodDeclaration.Identifier.ValueText
             : null;
 
-    // Collects the names invoked as Foo(), this.Foo() or TypeName.Foo(), including from lambdas
-    // and local functions. Method groups, base.Foo() and other.Foo() don't count.
+    // Collects the names a member calls, including from lambdas and local functions: invoked as
+    // Foo(), this.Foo() or TypeName.Foo(), or referenced as the method group Foo, this.Foo or
+    // TypeName.Foo (see IsMethodGroupUse). base.Foo, other.Foo and Other.Foo don't count, and
+    // neither does a method group subscribed with += or -=. A bare name that is also the name of
+    // a parameter, local, local function or pattern variable anywhere in the member doesn't count.
     private static HashSet<string> GetCalledMethodNames(
         MemberDeclarationSyntax member,
         TypeDeclarationSyntax typeDeclaration
@@ -616,24 +619,42 @@ internal class MemberReorderer
                 case SingleVariableDesignationSyntax designation:
                     localNames.Add(designation.Identifier.ValueText);
                     break;
+                case ForEachStatementSyntax forEach:
+                    localNames.Add(forEach.Identifier.ValueText);
+                    break;
+                case CatchDeclarationSyntax catchDeclaration:
+                    localNames.Add(catchDeclaration.Identifier.ValueText);
+                    break;
+                case FromClauseSyntax from:
+                    localNames.Add(from.Identifier.ValueText);
+                    break;
+                case LetClauseSyntax let:
+                    localNames.Add(let.Identifier.ValueText);
+                    break;
+                case JoinClauseSyntax join:
+                    localNames.Add(join.Identifier.ValueText);
+                    break;
+                case JoinIntoClauseSyntax joinInto:
+                    localNames.Add(joinInto.Identifier.ValueText);
+                    break;
+                case QueryContinuationSyntax continuation:
+                    localNames.Add(continuation.Identifier.ValueText);
+                    break;
                 case InvocationExpressionSyntax invocation:
                     switch (invocation.Expression)
                     {
                         case SimpleNameSyntax simpleName:
                             bareNames.Add(simpleName.Identifier.ValueText);
                             break;
-                        case MemberAccessExpressionSyntax
-                        {
-                            RawKind: (int)SyntaxKind.SimpleMemberAccessExpression,
-                        } memberAccess
-                            when memberAccess.Expression is ThisExpressionSyntax
-                                || (
-                                    memberAccess.Expression is SimpleNameSyntax qualifier
-                                    && qualifier.Identifier.ValueText == typeName
-                                ):
+                        case MemberAccessExpressionSyntax memberAccess
+                            when IsOwnMemberAccess(memberAccess, typeName):
                             memberNames.Add(memberAccess.Name.Identifier.ValueText);
                             break;
                     }
+                    break;
+                case SimpleNameSyntax simpleName
+                    when IsMethodGroupUse(simpleName, typeName, out var isQualified):
+                    (isQualified ? memberNames : bareNames).Add(simpleName.Identifier.ValueText);
                     break;
             }
         }
@@ -641,5 +662,118 @@ internal class MemberReorderer
         bareNames.ExceptWith(localNames);
         memberNames.UnionWith(bareNames);
         return memberNames;
+    }
+
+    // this.Foo or TypeName.Foo, where TypeName is the name of the type being ordered.
+    private static bool IsOwnMemberAccess(
+        MemberAccessExpressionSyntax memberAccess,
+        string typeName
+    ) =>
+        memberAccess.RawKind == (int)SyntaxKind.SimpleMemberAccessExpression
+        && (
+            memberAccess.Expression is ThisExpressionSyntax
+            || (
+                memberAccess.Expression is SimpleNameSyntax qualifier
+                && qualifier.Identifier.ValueText == typeName
+            )
+        );
+
+    // Whether a name, written Foo, this.Foo or TypeName.Foo, stands where a method group can be
+    // used as a value: an argument, the value of a variable, an assignment, a return, a lambda
+    // body, a collection element or a switch arm, possibly through parentheses, a cast, ?: or ??.
+    // Every other place a name can stand (a type, an attribute, the name of a named argument, the
+    // left side of an assignment, a receiver like Foo.Bar, nameof(Foo)) doesn't count. Neither
+    // does anything on the right of += or -=: those subscribe handlers, and a method that wires
+    // five handlers would be pushed below all five.
+    private static bool IsMethodGroupUse(
+        SimpleNameSyntax name,
+        string typeName,
+        out bool isQualified
+    )
+    {
+        isQualified = false;
+        ExpressionSyntax expression = name;
+        if (name.Parent is MemberAccessExpressionSyntax memberAccess && memberAccess.Name == name)
+        {
+            if (!IsOwnMemberAccess(memberAccess, typeName))
+            {
+                return false;
+            }
+
+            isQualified = true;
+            expression = memberAccess;
+        }
+
+        while (IsTransparent(expression))
+        {
+            expression = (ExpressionSyntax)expression.Parent!;
+        }
+
+        var isValue = expression.Parent switch
+        {
+            ArgumentSyntax argument => argument.RefKindKeyword.RawSyntaxKind() is SyntaxKind.None
+                && argument.Parent is ArgumentListSyntax argumentList
+                && !IsNameOf(argumentList.Parent),
+            EqualsValueClauseSyntax => true,
+            AssignmentExpressionSyntax assignment => assignment.RawKind
+                == (int)SyntaxKind.SimpleAssignmentExpression
+                && assignment.Right == expression,
+            ReturnStatementSyntax
+            or YieldStatementSyntax
+            or ArrowExpressionClauseSyntax
+            or ExpressionElementSyntax
+            or InitializerExpressionSyntax => true,
+            AnonymousFunctionExpressionSyntax lambda => lambda.ExpressionBody == expression,
+            SwitchExpressionArmSyntax arm => arm.Expression == expression,
+            _ => false,
+        };
+
+        return isValue && !IsSubscribed(expression);
+    }
+
+    // Whether an expression's value passes unchanged to its parent: (Foo), (Action)Foo, c ? Foo : Bar
+    // and Foo ?? Bar.
+    private static bool IsTransparent(ExpressionSyntax expression) =>
+        expression.Parent switch
+        {
+            ParenthesizedExpressionSyntax => true,
+            CastExpressionSyntax cast => cast.Expression == expression,
+            ConditionalExpressionSyntax conditional => conditional.Condition != expression,
+            BinaryExpressionSyntax binary => binary.RawKind == (int)SyntaxKind.CoalesceExpression,
+            _ => false,
+        };
+
+    private static bool IsNameOf(SyntaxNode? node) =>
+        node
+            is InvocationExpressionSyntax
+            {
+                Expression: IdentifierNameSyntax { Identifier.ValueText: "nameof" },
+            };
+
+    // Whether an expression is part of the right side of += or -=, without crossing into a lambda
+    // or local function: a handler's own body calls methods like any other code.
+    private static bool IsSubscribed(ExpressionSyntax expression)
+    {
+        SyntaxNode child = expression;
+        foreach (var ancestor in expression.Ancestors())
+        {
+            switch (ancestor)
+            {
+                case AssignmentExpressionSyntax assignment
+                    when assignment.RawKind
+                        is (int)SyntaxKind.AddAssignmentExpression
+                            or (int)SyntaxKind.SubtractAssignmentExpression
+                        && assignment.Right == child:
+                    return true;
+                case AnonymousFunctionExpressionSyntax
+                or LocalFunctionStatementSyntax
+                or MemberDeclarationSyntax:
+                    return false;
+            }
+
+            child = ancestor;
+        }
+
+        return false;
     }
 }

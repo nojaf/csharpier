@@ -1,0 +1,49 @@
+public class MethodGroups : Node
+{
+    private Action _handler;
+
+    private static void Qualified() { }
+
+    public void Recursive()
+    {
+        Register(Recursive);
+    }
+
+    private void Argument() { }
+
+    private void ExplicitThis() { }
+
+    private void Generic<T>() { }
+
+    private void Initializer() { }
+
+    private void Assigned() { }
+
+    private void InObjectInitializer() { }
+
+    private void InCollection() { }
+
+    private void WhenTrue() { }
+
+    private void WhenFalse() { }
+
+    private void InSubscribedLambda() { }
+
+    public void Counts()
+    {
+        Callable.From(Argument);
+        Register(this.ExplicitThis);
+        Register(MethodGroups.Qualified);
+        Register(Generic<int>);
+        Action initialized = Initializer;
+        _handler = Assigned;
+        var button = new Button { Pressed = InObjectInitializer };
+        Action[] all = [InCollection];
+        Action chosen = _handler is null ? (Action)WhenTrue : WhenFalse;
+        Button.Pressed += () => Register(InSubscribedLambda);
+    }
+
+    private void Returned() { }
+
+    public Action Returns() => Returned;
+}

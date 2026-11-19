@@ -1,0 +1,10 @@
+public sealed class MarchingRules
+{
+    private EnemyRule[] Rules() =>
+        [new("march", EnemyRulePriority.Fallback, Applies: _ => true, ActOn: March)];
+
+    private void March(Situation situation)
+    {
+        _self.WalkTo(situation.Self.GlobalPosition);
+    }
+}

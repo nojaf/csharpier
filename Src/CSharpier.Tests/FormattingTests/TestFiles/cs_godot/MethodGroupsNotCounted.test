@@ -1,0 +1,91 @@
+public class MethodGroupsNotCounted : Node
+{
+    [AttributeName]
+    public void DoesNotCount(Critter critter, Action Parameter, Action[] actions)
+    {
+        Button.Pressed += Subscribed;
+        Button.Pressed -= Unsubscribed;
+        Button.Pressed += this.SubscribedThis;
+        Button.Pressed += new EventHandler(SubscribedWrapped);
+        Register(Parameter);
+        Action Local = () => { };
+        Register(Local);
+        Register(LocalFunction);
+        Register(LambdaParameter => Register(LambdaParameter));
+        if (critter is { } Pattern)
+        {
+            Register(Pattern);
+        }
+        foreach (var ForEach in actions)
+        {
+            Register(ForEach);
+        }
+        try { }
+        catch (Exception Caught)
+        {
+            Register(Caught);
+        }
+        Register(from Query in actions select Wrap(Query));
+        Register(critter.OtherReceiver);
+        Register(base.BaseGroup);
+        Register(Other.OtherType);
+        Register(out OutArgument);
+        GD.Print(nameof(NameOf));
+        Configure(NamedArgument: 1);
+        var button = new Button { ObjectInitializerName = 1 };
+        TypeName value = default;
+        var type = typeof(TypeOf);
+        var list = new List<TypeArgument>();
+        AssignedTo = 1;
+
+        void LocalFunction() { }
+    }
+
+    private void Subscribed() { }
+
+    private void Unsubscribed() { }
+
+    private void SubscribedThis() { }
+
+    private void SubscribedWrapped() { }
+
+    private void Parameter() { }
+
+    private void Local() { }
+
+    private void LocalFunction() { }
+
+    private void LambdaParameter() { }
+
+    private void Pattern() { }
+
+    private void ForEach() { }
+
+    private void Caught() { }
+
+    private void Query() { }
+
+    private void OtherReceiver() { }
+
+    private void BaseGroup() { }
+
+    private void OtherType() { }
+
+    private void OutArgument() { }
+
+    private void NameOf() { }
+
+    private void NamedArgument() { }
+
+    private void ObjectInitializerName() { }
+
+    private void TypeName() { }
+
+    private void TypeOf() { }
+
+    private void TypeArgument() { }
+
+    private void AttributeName() { }
+
+    private void AssignedTo() { }
+}

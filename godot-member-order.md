@@ -93,25 +93,41 @@ Foo(x);                  // bare invocation
 this.Foo(x);             // explicit this
 PlayerControl.Foo(x);    // qualified with the containing type's own name
 () => Foo(x)             // inside a lambda or local function: belongs to the enclosing method
+Callable.From(Foo);      // method group as an argument
+new(ActOn: Foo)          // method group as a named argument
+Action a = this.Foo;     // method group as a value: this.Foo and PlayerControl.Foo too
 ```
 
 These do not count:
 
 ```csharp
-Critters.CritterTapped += CrittersOnCritterTapped;  // method group (subscriptions do not count)
-Callable.From(Foo);                                 // method group, same reasoning
+Critters.CritterTapped += CrittersOnCritterTapped;  // subscription, see below
+Critters.CritterTapped -= CrittersOnCritterTapped;  // same
 other.Foo();                                        // another instance: syntax cannot tell its type
 base.Foo();                                         // declared in the base class
 Other.Foo();                                        // another type
+nameof(Foo)                                         // a name, not a use
 ```
 
-- **Only invocations count.** A method group reference never does.
+- **Invocations and method groups count, subscriptions do not.** A method group counts where
+  a delegate value can stand: an argument, a variable or field initializer, the right side of
+  `=` (object initializers included), a return or `=>` body, a collection element or a switch
+  arm, also through parentheses, a cast, `?:` or `??`. Anything on the right of `+=` or `-=`
+  does not count, `+= new EventHandler(Foo)` included: a method that wires five handlers would
+  otherwise be pushed below all five. A lambda handler's own body is ordinary code, so
+  `+= () => Foo()` still counts.
+- **Names that are not uses** never count: the name of a named argument (`ActOn:`), the left
+  side of an assignment or object initializer entry, a receiver (`Foo.Bar`), a type, a generic
+  type argument, an attribute name, `typeof(Foo)`, `nameof(Foo)`, and `ref` or `out` arguments.
 - **Name-based:** `Foo` must be the name of a method declared in the same type declaration
   (groups 6b, 10 or 11). A call to `Foo` means every overload of `Foo` must sit above the caller.
   No semantic model is needed, and none should be used.
 - **Recursion:** a method calling itself is always allowed.
-- **A local function or lambda** whose name shadows a member method: calls to it are not member
-  calls. Checking local function names in the enclosing method is enough.
+- **A local name** that shadows a member method (a parameter, a local variable, a local
+  function, a lambda parameter, a pattern, `foreach`, `catch` or query variable): bare calls
+  and method groups of that name are not member calls. Any such name anywhere in the enclosing
+  member is enough to rule it out, whatever its scope. `this.Foo` and `PlayerControl.Foo` still
+  count.
 
 ### Scope
 

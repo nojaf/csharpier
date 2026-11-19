@@ -6,6 +6,7 @@ public class Calls : Node
         this.Explicit();
         Calls.Qualified();
         Action action = () => InLambda();
+        Callable.From(MethodGroupArgument);
         Local();
 
         void Local()
@@ -17,7 +18,8 @@ public class Calls : Node
     public void NotCalls(Calls other)
     {
         Button.Pressed += MethodGroup;
-        Callable.From(MethodGroupArgument);
+        Button.Pressed -= MethodGroup;
+        Button.Pressed += this.MethodGroup;
         other.OtherInstance();
         base.BaseCall();
         Other.OtherType();
@@ -41,9 +43,9 @@ public class Calls : Node
 
     private void InLocalFunction() { }
 
-    private void MethodGroup() { }
-
     private void MethodGroupArgument() { }
+
+    private void MethodGroup() { }
 
     private void OtherInstance() { }
 

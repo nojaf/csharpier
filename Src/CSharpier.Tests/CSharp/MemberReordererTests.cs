@@ -103,6 +103,82 @@ internal sealed class MemberReordererTests
     }
 
     [Test]
+    public void Method_Group_Cycle_Is_Kept_Together_And_Warns()
+    {
+        var code = """
+            class C
+            {
+                void Retry() => Schedule(OnTimeout);
+
+                void OnTimeout() => Retry();
+
+                const int Constant = 1;
+            }
+            """;
+
+        var result = CSharpFormatter.Format(code, Godot);
+
+        result
+            .Code.Should()
+            .Be(
+                """
+                class C
+                {
+                    const int Constant = 1;
+
+                    void Retry() => Schedule(OnTimeout);
+
+                    void OnTimeout() => Retry();
+                }
+
+                """
+            );
+        result
+            .MemberOrderWarnings.Should()
+            .Equal(
+                "The methods Retry, OnTimeout of C call each other, so they were kept together in source order."
+            );
+    }
+
+    [Test]
+    public void Method_Group_In_Field_Initializer_Makes_A_State_Helper()
+    {
+        var code = """
+            class C
+            {
+                void Caller() => Callee();
+
+                void Callee() { }
+
+                Callable _callable = Callable.From(Helper);
+
+                void Helper() { }
+            }
+            """;
+
+        var result = CSharpFormatter.Format(code, Godot);
+
+        result
+            .Code.Should()
+            .Be(
+                """
+                class C
+                {
+                    Callable _callable = Callable.From(Helper);
+
+                    void Helper() { }
+
+                    void Callee() { }
+
+                    void Caller() => Callee();
+                }
+
+                """
+            );
+        result.MemberOrderWarnings.Should().BeEmpty();
+    }
+
+    [Test]
     public void Directive_Between_Members_Leaves_Order_And_Warns()
     {
         var code = """
